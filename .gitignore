@@ -1,2 +1,5 @@
 my_database.db
 test.py
+my_database.db-shm
+my_database.db-wal
+configs.ini

@@ -1,25 +1,58 @@
-from flask import Flask,request,jsonify
+from flask import Flask,request,jsonify,render_template,send_from_directory
 from netobjects import TCPConnection
 import configparser,os
 #import tcpserver
 from queue import Queue
-import base64
+import base64,random
+from flask_cors import CORS
+
 app=Flask(__name__)
+CORS(app)
 configs=configparser.ConfigParser()
 configs.read("configs.ini")
+inputcounter=0
+def increment_inputCounter(number:int):
+    global inputcounter
+    inputcounter+=number
+def flush_inputcounter():
+    global inputcounter
+    inputcounter=0
 data={}#{int:Queue}
 connections={}
-app.route('/')
+@app.route('/')
 def main():
-    return "main page"
+    return render_template('i.html',apiaddr=configs.get("AppConfig","appaddress"),maxknob=configs.get("AppConfig","queuelen"))
+def generate_chart_data():
+    labels = ['January', 'February', 'March', 'April', 'May']
+    data = [random.randint(10, 100) for _ in range(len(labels))]
+    return {'labels': labels, 'data': data}
+
+@app.route('/chart-data')
+def chart_data():
+    return jsonify(generate_chart_data())
+
+
+def generate_knob_data():
+    result={'value1': len(connections.keys()), 'value2': inputcounter}
+    flush_inputcounter()
+    return result
+
+@app.route('/knob-data')
+def knob_data():
+    return jsonify(generate_knob_data())
+
 @app.route('/addcontroller',methods=['POST'])
 def add_controller():
         details=request.get_json()
     #data.put(request.json.get("b64data"))
     #try:
         if len(connections.keys())>1:
-            
-            _instance=connections.keys()[0].clone()#prototype
+            try:
+                _instance=connections.keys()[0].clone()#prototype
+            except TypeError:
+                _instance=TCPConnection(details["source_ip"],details["destination_ip"],details["source_port"],details["destination_port"],details["action"],details["enctype"])
+            except Exception as ex:
+                print("unknown error ",str(ex))
             
             _instance.source_ip=details["source_ip"]
             _instance.destination_ip=details["destination_ip"]
@@ -54,7 +87,10 @@ def add_date(id):
     conn=connections.get(int(id))
     
     if conn:
-        conn.recieved+=3*(len(request.json.get("b64data").encode())//4)#padding chars not handled
+        datalen=3*(len(request.json.get("b64data").encode())//4)#padding chars not handled
+        conn.recieved+=datalen
+        increment_inputCounter(datalen)
+        
     return jsonify({"message":"successfully added","keys": str(data.keys())})
 
 @app.route('/save/db/<_id>')
@@ -87,4 +123,17 @@ def savetofile(filename,id):
     f.close()
     
     return f"{iterator} Chunks written in {filename}"
+
+@app.route('/remove/conn/<id>',methods=["POST"])
+def removeConnection(id):
+    if int(id)==0:
+        connections.clear()
+        return "successfully cleared connection"
+    del connections[int(id)]
+    return f"successfully deleted connection {id}"
+
+"""
+@app.route('/static/vendors/bower_components/<path>')
+def routi(path):
+    return send_from_directory('static/vendors/browser_components/', path)"""
 app.run(debug=True)

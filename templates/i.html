@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Black & Green Chart.js Example</title>
+   
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-knob/dist/jquery.knob.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <style>
+        body {
+            background-color: #000;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 0;
+        }
+        canvas {
+            max-width: 100%;
+        }
+        #data-table {
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        th {
+            background-color: #111;
+        }
+        tr:nth-child(even) {
+            background-color: #222;
+        }
+        .chart-container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        .knob {
+            width: 400px;
+            height: 400px;
+        }
+        p{
+            font-family: 'Courier New', Courier, monospace;
+            color:white;
+            font-weight: bold;
+            align-items: center;
+            align-self: center;
+            align-content: center;
+        }
+        btn-link{
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="lineChart" height="100px"></canvas>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 col-sm-6">
+                <input type="text" class="knob" id="knobChart1" data-width="400" data-height="400" data-fgColor="#ff4d00" data-bgColor="#4d4d4d">
+                <p>Connections</p>
+            </div>
+            <div class="col-lg-6 col-sm-6">
+                <input  type="text" class="knob" id="knobChart2" data-width="400" data-height="400" data-fgColor="#466900" data-bgColor="#4d4d4d">
+                <p>INPUT</p>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <div id="data-table"></div>
+
+    <script>
+        fetch(JSON.parse('{{ apiaddr | tojson }}').concat('','/chart-data'))
+            .then(response => response.json())
+            .then(data => {
+                if (data.labels && data.data) {
+                    generateCharts(data.labels, data.data);
+                    generateTable(data.labels, data.data);
+                } else {
+                    console.error('Data is not in the expected format:', data);
+                }
+            })
+            .catch(error => console.error('Error fetching data:', error));
+
+        function generateCharts(labels, values) {
+            //generateBarChart(labels, values);
+            generateLineChart(labels, values);
+        }
+
+        function generateBarChart(labels, values) {
+            const ctx = document.getElementById('barChart').getContext('2d');
+            const barChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Bar Chart Data',
+                        data: values,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function generateLineChart(labels, values) {
+            const ctx = document.getElementById('lineChart').getContext('2d');
+            const lineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Line Chart Data',
+                        data: values,
+                        fill: 'origin',
+                        borderColor: '#00ff00', // Green color for line
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function fetchDataAndCreateTable() {
+    fetch(JSON.parse('{{ apiaddr | tojson }}').concat('','/get/allconnections'))
+        .then(response => response.json())
+        .then(data => {
+            const dataTableDiv = document.querySelector('#data-table');
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>x</th>
+                        <th>ID</th>
+                        <th>Action</th>
+                        <th>Destination IP</th>
+                        <th>Destination Port</th>
+                        <th>DL</th>
+                        <th>Encryption Type</th>
+                        <th>Source IP</th>
+                        <th>Source Port</th>
+                        <th>Controls</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.map(item => `
+                        <tr>
+                            <form id='connections_form'>
+                            <td><button type="button" class="btn btn-link" onclick="remove_by_id(${item.ID})">del</button></td>
+                            <td>${item.ID}<input type="hidden" value="${item.ID}" name="connid" id="connid"></td>
+                            <td>${item.action}</td>
+                            <td>${item.destination_ip}</td>
+                            <td>${item.destination_port}</td>
+                            <td>${item.dl}</td>
+                            <td>${item.enctype}</td>
+                            <td>${item.source_ip}</td>
+                            <td>${item.source_port}</td>
+                            <td><button type="button" class="btn btn-success btn-xs" onclick="saveToDB(${item.ID})">DB</button>
+                                <button type="button" class="btn btn-danger btn-xs" onclick="saveToFile(${item.ID})">File</button>
+                                </td>
+                            </form>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            `;
+            while (dataTableDiv.firstChild) {
+                dataTableDiv.removeChild(dataTableDiv.firstChild);
+            }
+            dataTableDiv.appendChild(table);
+        })
+        .catch(error => console.error('Error fetching data:', error));
+}
+
+fetchDataAndCreateTable();
+setInterval(fetchDataAndCreateTable,2000)
+</script>
+
+    </script>
+
+
+
+<script>
+function saveToDB(_id) {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "/save/db/" + _id, true);
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                console.log(xhr.responseText); // Successful response
+            } else {
+                console.error("Request failed:", xhr.status); // Error handling
+            }
+        }
+    };
+
+    xhr.send();
+}
+
+function saveToFile(id) {
+    // Prompt the user to enter the filename
+    var filename = prompt("Enter filename:");
+
+    if (filename !== null && filename !== "") {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "http://127.0.0.1:5000/save/file/" + encodeURIComponent(filename) + "/" + id, true);
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    console.log(xhr.responseText); // Successful response
+                } else {
+                    console.error("Request failed:", xhr.status); // Error handling
+                }
+            }
+        };
+
+        xhr.send();
+    } else {
+        console.error("Filename is required."); // Error handling for empty filename
+    }
+}
+
+</script>
+   
+<script>
+    function update_knobs(){
+    $(document).ready(function(){
+        fetch(JSON.parse('{{ apiaddr | tojson }}').concat('','/knob-data'))
+            .then(response => response.json())
+            .then(data => {
+                if (data.value1) {
+                    $('#knobChart1').val(data.value1).trigger('change');
+                    $('#knobChart2').val(data.value2).trigger('change');
+                } else {
+                    $('#knobChart1').val(0).trigger('change');
+                    $('#knobChart2').val(0).trigger('change');
+                    console.error('Data is not in the expected format:', data);
+                }
+            })
+            .catch(error => console.error('Error fetching data:', error));
+        
+        $(".knob").knob({
+            'min': 0,
+            'max': JSON.parse('{{ maxknob | tojson }}'),
+            'readOnly': true,
+            'angleArc': 250,
+            'angleOffset': -125,
+            'displayInput': true,
+            'fgColor': '#ff0000', // Green color
+            'bgColor': '#111111', // Dark background color
+        });
+    });
+}
+update_knobs();
+setInterval(update_knobs,2000);
+</script>
+</body>
+</html>

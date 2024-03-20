@@ -1,4 +1,4 @@
-import socket,requests
+import socket,requests,logging
 import select,base64,json
 connections={}
 # Create a TCP/IP socket
@@ -50,8 +50,14 @@ while inputs:
             else:
                 # Client closed the connection
                 print("Client disconnected:", sock.getpeername())
-                
-                del connections[client_address]
+                try:
+                    requests.post(f"http://127.0.0.1:5000/remove/conn/{str(connections[client_address])}")
+                    del connections[client_address]
+                except KeyError:
+                    logging.warning(f"Key:{client_address} is not available ")
+                print(connections)
+                if len(connections.items())<1:
+                    requests.post("http://127.0.0.1:5000/remove/conn/0") #handle orphened connections
                 
                 if sock in outputs:
                     del outputs[sock]
