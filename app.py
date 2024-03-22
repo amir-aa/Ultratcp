@@ -19,9 +19,13 @@ def flush_queue(conn:TCPConnection):
             else:
                 from datetime import datetime
                 current_datetime=datetime.now()
-                formatted_datetime = current_datetime.strftime("%Y_%m_%d_%H_%M_%S")
-                fname=str(formatted_datetime)+".bin"
-                conn.flush_data(fname,data[int(id)])
+                if "yes" in str(configs.get("AppConfig","onefile")).lower():
+                    formatted_datetime = current_datetime.strftime("%Y_%m_%d")
+                    fname=str(formatted_datetime)+"_ID_"+str(conn.id)+".bin"
+                else:
+                    formatted_datetime = current_datetime.strftime("%Y_%m_%d_%H_%M_%S")
+                    fname=str(formatted_datetime)+".bin"
+                conn.flush_data(fname,data[int(conn.id)])
                 conn.recieved=0
 def increment_inputCounter(number:int):
     global inputcounter
@@ -104,7 +108,6 @@ def add_date(id):
         increment_inputCounter(datalen)
         if conn.recieved> int(configs.get("AppConfig","queuelen")) :
             #more than capacity | write and saving data is required
-            #اگر اکشن دیتابیس یا فوروارد بود چی؟؟؟
             flush_queue(conn)
             return jsonify({"message":"successfully added But Queue has flushed due to full capacity.","keys": str(data.keys())}),201
     return jsonify({"message":"successfully added","keys": str(data.keys())}),200
