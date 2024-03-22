@@ -1,16 +1,34 @@
 import socket,requests,logging
 import select,base64,json
+import configparser
+
+conf=configparser.ConfigParser()
+conf.read("configs.ini")
+def getAction_by_addr(addr:str):
+    with open('peers.conf','r') as f:
+        lines=f.readlines()
+        for line in lines:
+            if addr in line:
+                if "FS" in line:
+                    return 'file'
+                elif "DB" in line:
+                    return 'db'
+                else:
+                    return 'forward'
+        f.close()
+    return None
+            
 connections={}
 # Create a TCP/IP socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # Bind the socket to the address and port
-server_address = ('', 12345)
+server_address = (conf.get("AppConfig","bindaddress"), int(conf.get("AppConfig","port")))
 server_socket.bind(server_address)
 
 # Listen for incoming connections
-server_socket.listen(5)
+server_socket.listen(int(conf.get("AppConfig","port")))
 server_socket.setblocking(False)
 
 # Create dictionaries to track sockets and their data
@@ -31,45 +49,47 @@ while inputs:
             inputs[client_socket] = client_socket
         else:
             # Handle data from an existing client socket
-            data = sock.recv(1024)
+            data = sock.recv(int(conf.get("AppConfig","buffer")))
             if data:
-                # Process received dataf
+                # Process received data
                 b64data=base64.b64encode(data)
                 if client_address in connections.keys():
                     _id=connections[client_address]
-                else:
-                    resp=requests.post("http://127.0.0.1:5000/addcontroller",json={"source_ip":client_address[0],"source_port":client_address[1]
-                                                                     ,"destination_port":12345,"destination_ip":'127.0.0.1',"action":"file","enctype":""})
+                else:#no duplicate
+                    action=getAction_by_addr(client_address[0])
+                    if not action:
+                        action='file'
+                    resp=requests.post(conf.get("AppConfig","appaddress")+"/addcontroller",json={"source_ip":client_address[0],"source_port":client_address[1]
+                                                                     ,"destination_port":conf.get("AppConfig","port"),"destination_ip":conf.get("AppConfig","bindaddress"),"action":action,"enctype":""})
                     #print(resp.text)
                     #print(dict(json.loads(resp.text))["id"])
                     _id=dict(json.loads(resp.text))["id"]
                     connections[client_address]=_id
-                requests.post("http://127.0.0.1:5000/save/data/"+str(_id),json={"b64data":b64data.decode()})
+                requests.post(conf.get("AppConfig","appaddress")+"/save/data/"+str(_id),json={"b64data":b64data.decode()})
 
                 outputs[sock] = data
             else:
                 # Client closed the connection
                 print("Client disconnected:", sock.getpeername())
                 try:
-                    requests.post(f"http://127.0.0.1:5000/remove/conn/{str(connections[client_address])}")
+                    requests.post(f'{conf.get("AppConfig","appaddress")}/remove/conn/{str(connections[client_address])}')
                     del connections[client_address]
                 except KeyError:
                     logging.warning(f"Key:{client_address} is not available ")
                 print(connections)
                 if len(connections.items())<1:
-                    requests.post("http://127.0.0.1:5000/remove/conn/0") #handle orphened connections
+                    requests.post(conf.get("AppConfig","appaddress")+"/remove/conn/0") #handle orphened connections
                 
                 if sock in outputs:
                     del outputs[sock]
                 del inputs[sock]
                 sock.close()
-
     # Handle writable sockets (send outgoing data)
     for sock in writable:
         data = outputs.pop(sock)
         sock.sendall(data)
 
-    # Handle exceptional conditions (errors)
+    #Handle Exceptions
     for sock in exceptional:
         print("Exceptional condition on:", sock.getpeername())
         del inputs[sock]

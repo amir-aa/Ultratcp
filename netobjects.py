@@ -1,4 +1,5 @@
 import copy,json,secrets
+from queue import Queue
 from models import tbl_TCPConnection
 class TCPConnection:
     def __init__(self,source_ip,destination_ip,source_port,destination_port,action,enctype=None):
@@ -7,7 +8,7 @@ class TCPConnection:
         self.destination_ip=destination_ip
         self.source_port=source_port
         self.destination_port=destination_port
-        self.action=action#storeDB|storefile|send
+        self.action=action#DB|file|forward
         self.enctype=enctype
         self.recieved=0
         
@@ -31,6 +32,15 @@ class TCPConnection:
             "dl":self.recieved
            
         }
+    def flush_data(self,filename:str,queue:Queue):
+        import base64
+        """flush function saves all data in file and turns dl value(counter) to 0 bytes"""
+        with open(filename,'ab') as f:
+            for i in range(queue.qsize()):
+                f.write(base64.b64decode(str(queue.get()).encode()))
+            f.close()
+        
+            
 t1=TCPConnection("2","2",1,3,"forward","No")
 t2=TCPConnection("22","2",1,3,"forward","No")
 t3=t2.clone()

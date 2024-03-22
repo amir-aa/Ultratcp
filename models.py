@@ -20,17 +20,7 @@ class tbl_TCPConnection(BaseModel):
         action=CharField(30)#storeDB|storefile|send
         enctype=CharField(null=True)
 
-class Knownsource(BaseModel):
-     ID=AutoField()
-     Title=CharField()
-     SRC=CharField()
-     DST=CharField()
-     created_at=DateTimeField(default=datetime.datetime.now())
-     @classmethod
-     def newSource(self,title,src,dst):
-          Knownsource.insert(Title=title,SRC=src,DST=dst).execute()
-    
 def init():
-    database.create_tables([DataTable,tbl_TCPConnection,Knownsource],safe=True)
+    database.create_tables([DataTable,tbl_TCPConnection],safe=True)
 
 init()

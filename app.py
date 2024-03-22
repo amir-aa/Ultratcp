@@ -11,6 +11,18 @@ CORS(app)
 configs=configparser.ConfigParser()
 configs.read("configs.ini")
 inputcounter=0
+def flush_queue(conn:TCPConnection):
+            if conn.action=='DB':
+                saveinDB(conn.id)
+            elif conn.action=="forward":
+                pass
+            else:
+                from datetime import datetime
+                current_datetime=datetime.now()
+                formatted_datetime = current_datetime.strftime("%Y_%m_%d_%H_%M_%S")
+                fname=str(formatted_datetime)+".bin"
+                conn.flush_data(fname,data[int(id)])
+                conn.recieved=0
 def increment_inputCounter(number:int):
     global inputcounter
     inputcounter+=number
@@ -90,8 +102,12 @@ def add_date(id):
         datalen=3*(len(request.json.get("b64data").encode())//4)#padding chars not handled
         conn.recieved+=datalen
         increment_inputCounter(datalen)
-        
-    return jsonify({"message":"successfully added","keys": str(data.keys())})
+        if conn.recieved> int(configs.get("AppConfig","queuelen")) :
+            #more than capacity | write and saving data is required
+            #اگر اکشن دیتابیس یا فوروارد بود چی؟؟؟
+            flush_queue(conn)
+            return jsonify({"message":"successfully added But Queue has flushed due to full capacity.","keys": str(data.keys())}),201
+    return jsonify({"message":"successfully added","keys": str(data.keys())}),200
 
 @app.route('/save/db/<_id>')
 def saveinDB(_id):
@@ -129,6 +145,9 @@ def removeConnection(id):
     if int(id)==0:
         connections.clear()
         return "successfully cleared connection"
+    #first saving data !
+    conn=connections.get(int(id))
+    flush_queue(conn)
     del connections[int(id)]
     return f"successfully deleted connection {id}"
 
