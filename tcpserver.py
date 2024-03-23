@@ -57,6 +57,7 @@ while inputs:
                     _id=connections[client_address]
                 else:#no duplicate
                     action=getAction_by_addr(client_address[0])
+                    print(action)
                     if not action:
                         action='file'
                     resp=requests.post(conf.get("AppConfig","appaddress")+"/addcontroller",json={"source_ip":client_address[0],"source_port":client_address[1]

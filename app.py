@@ -1,22 +1,28 @@
-from flask import Flask,request,jsonify,render_template,send_from_directory
+from flask import Flask,request,jsonify,render_template,send_from_directory,url_for
 from netobjects import TCPConnection
 import configparser,os
-#import tcpserver
+from forwarder import TCPSender
 from queue import Queue
 import base64,random
 from flask_cors import CORS
-
+import requests
 app=Flask(__name__)
 CORS(app)
 configs=configparser.ConfigParser()
 configs.read("configs.ini")
+forwardto,forwardto_port=configs.get("AppConfig","forwardto").split(":")
+tcp_proto=TCPSender(forwardto,int(forwardto_port),Queue())
 inputcounter=0
 def flush_queue(conn:TCPConnection):
-            if conn.action=='DB':
-                saveinDB(conn.id)
+            if conn.action=='db':
+                requests.post(url_for('saveinDB', _external=True,_id=conn.id))
+                
             elif conn.action=="forward":
-                pass
-            else:
+                tcp_thread=tcp_proto.clone()
+                tcp_thread.dataqueue=data[int(conn.id)]
+                tcp_thread.run()
+                
+            else:#FS or nothing in peers
                 from datetime import datetime
                 current_datetime=datetime.now()
                 if "yes" in str(configs.get("AppConfig","onefile")).lower():
@@ -26,7 +32,7 @@ def flush_queue(conn:TCPConnection):
                     formatted_datetime = current_datetime.strftime("%Y_%m_%d_%H_%M_%S")
                     fname=str(formatted_datetime)+".bin"
                 conn.flush_data(fname,data[int(conn.id)])
-                conn.recieved=0
+            conn.recieved=0
 def increment_inputCounter(number:int):
     global inputcounter
     inputcounter+=number
@@ -109,10 +115,11 @@ def add_date(id):
         if conn.recieved> int(configs.get("AppConfig","queuelen")) :
             #more than capacity | write and saving data is required
             flush_queue(conn)
+            
             return jsonify({"message":"successfully added But Queue has flushed due to full capacity.","keys": str(data.keys())}),201
     return jsonify({"message":"successfully added","keys": str(data.keys())}),200
 
-@app.route('/save/db/<_id>')
+@app.route('/save/db/<_id>',methods=['POST'])
 def saveinDB(_id):
     from models import DataTable
     iterator=0
