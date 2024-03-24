@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Black & Green Chart.js Example</title>
+    <title>UltraTCP</title>
    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery-knob/dist/jquery.knob.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hack-font@3.003/css/hack.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <style>
         body {
@@ -17,6 +18,22 @@
             margin: 0;
             padding: 0;
         }
+            /* Add animation class */
+    @keyframes slidein {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Add animation to navbar */
+    .navbar-brand {
+    font-family:   'Hack', monospace;
+      opacity: 0;
+      animation: slidein 0.5s forwards;
+    }
+    nav{
+        background-color: #000;
+        color: #000;
+    }
         canvas {
             max-width: 100%;
         }
@@ -62,23 +79,81 @@
     </style>
 </head>
 <body>
-    <canvas id="lineChart" height="100px"></canvas>
+    
     <div class="container">
         <div class="row">
             <div class="col-lg-6 col-sm-6">
-                <input type="text" class="knob" id="knobChart1" data-width="400" data-height="400" data-fgColor="#ff4d00" data-bgColor="#4d4d4d">
-                <p>Connections</p>
+                <div class="text-center">
+                <input type="text" class="knob" id="knobChart1" data-width="400" data-height="400" data-fgColor="#ff0000" data-bgColor="#4d4d4d">
+                <p>Connections</p></div>
             </div>
             <div class="col-lg-6 col-sm-6">
-                <input  type="text" class="knob" id="knobChart2" data-width="400" data-height="400" data-fgColor="#466900" data-bgColor="#4d4d4d">
+                <div class="text-center">
+                <input  type="text" class="knob" id="knobChart2" data-width="400" data-height="400" data-fgColor="#330099" data-bgColor="#4d4d4d">
                 <p>INPUT</p>
+                </div>
             </div>
         </div>
     </div>
 
-    
+    <div class="row">
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container">
+              <a class="navbar-brand" href="#">
+                <span id="animated-text" style="color: green;"></span>
+              </a>
+            </div>
+          </nav>
+    </div>
 
     <div id="data-table"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  
+    <script>
+      // Function to animate text one letter at a time
+      function animateText(text) {
+        var animatedText = document.getElementById('animated-text');
+        animatedText.textContent = ''; // Clear existing text
+        
+        // Split the text into an array of characters
+        var characters = text.split('');
+  
+        // Loop through each character and add it with a delay
+        characters.forEach(function(char, index) {
+          setTimeout(function() {
+            animatedText.textContent += char;
+          }, index * 100); // Adjust the delay as needed
+        });
+      }
+
+      
+
+      function fetchText() {
+  fetch('http://127.0.0.1:5000/getlogs')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.text();
+    })
+    .then(text => {
+        
+            newText = text; 
+    if ((!newText.includes("No Logs!"))){
+      animateText(newText);
+        }
+      
+    })
+    .catch(error => {
+      console.error('There was a problem with the fetch operation:', error);
+    });
+}
+setInterval(fetchText, 2000);
+      // Example usage
+      //var newText = "TEXT";
+      //animateText(newText);
+    </script>
 
     <script>
         fetch(JSON.parse('{{ apiaddr | tojson }}').concat('','/chart-data'))
@@ -122,30 +197,7 @@
             });
         }
 
-        function generateLineChart(labels, values) {
-            const ctx = document.getElementById('lineChart').getContext('2d');
-            const lineChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Line Chart Data',
-                        data: values,
-                        fill: 'origin',
-                        borderColor: '#00ff00', // Green color for line
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
-
+  
         function fetchDataAndCreateTable() {
     fetch(JSON.parse('{{ apiaddr | tojson }}').concat('','/get/allconnections'))
         .then(response => response.json())
@@ -198,6 +250,29 @@
 
 fetchDataAndCreateTable();
 setInterval(fetchDataAndCreateTable,2000)
+</script>
+
+
+<script>
+
+function remove_by_id(id) {
+    const url = `http://127.0.0.1:5000/remove/conn/${id}`;
+    fetch(url, {
+        method: 'POST'
+    })
+    .then(response => {
+        if (response.ok) {
+            console.log(`Successfully removed item with id ${id}`);
+        } else {
+            console.error(`Failed to remove item with id ${id}. Status code: ${response.status}`);
+        }
+    })
+    .catch(error => {
+        console.error(`Error: ${error}`);
+    });
+}
+
+
 </script>
 
     </script>
@@ -272,7 +347,7 @@ function saveToFile(id) {
             'angleArc': 250,
             'angleOffset': -125,
             'displayInput': true,
-            'fgColor': '#ff0000', // Green color
+         //   'fgColor': '#ff0000', // red color
             'bgColor': '#111111', // Dark background color
         });
     });

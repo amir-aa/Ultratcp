@@ -8,6 +8,7 @@ from flask_cors import CORS
 import requests
 app=Flask(__name__)
 CORS(app)
+logs=[]
 configs=configparser.ConfigParser()
 configs.read("configs.ini")
 forwardto,forwardto_port=configs.get("AppConfig","forwardto").split(":")
@@ -31,6 +32,7 @@ def flush_queue(conn:TCPConnection):
                 else:
                     formatted_datetime = current_datetime.strftime("%Y_%m_%d_%H_%M_%S")
                     fname=str(formatted_datetime)+".bin"
+                logs.append(f"File {fname} written")
                 conn.flush_data(fname,data[int(conn.id)])
             conn.recieved=0
 def increment_inputCounter(number:int):
@@ -86,6 +88,7 @@ def add_controller():
             _instance=TCPConnection(details["source_ip"],details["destination_ip"],details["source_port"],details["destination_port"],details["action"],details["enctype"])
         print(_instance.id)
         connections[int(_instance.id)]=_instance
+        logs.append(f"Controller {_instance.id} SRC: {details['source_ip']} Added")
         return jsonify({"message":"successfully added","id":_instance.id})
     #except KeyError:
     #    return jsonify("not sufficient arguments!"),400      
@@ -147,7 +150,7 @@ def savetofile(filename,id):
             f.write(base64.b64decode(chunk.encode()))
         iterator+=1
     f.close()
-    
+    logs.append(f"{iterator} Chunks written in {filename}")
     return f"{iterator} Chunks written in {filename}"
 
 @app.route('/remove/conn/<id>',methods=["POST"])
@@ -159,8 +162,15 @@ def removeConnection(id):
     conn=connections.get(int(id))
     flush_queue(conn)
     del connections[int(id)]
+    logs.append(f"ID {id} deleted ")
     return f"successfully deleted connection {id}"
-
+@app.route('/getlogs')
+def get_logs():
+    if len(logs)<1:
+        return jsonify("No Logs!")
+    lastlog=logs[-1]
+    logs.clear()
+    return jsonify(lastlog)
 """
 @app.route('/static/vendors/bower_components/<path>')
 def routi(path):
