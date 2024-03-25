@@ -51,21 +51,24 @@ while inputs:
             # Handle data from an existing client socket
             data = sock.recv(int(conf.get("AppConfig","buffer")))
             if data:
-                # Process received data
+                #New connection handling------------------------------------------
                 b64data=base64.b64encode(data)
                 if client_address in connections.keys():
                     _id=connections[client_address]
                 else:#no duplicate
                     action=getAction_by_addr(client_address[0])
-                    print(action)
+                    #print(action)
                     if not action:
                         action='file'
                     resp=requests.post(conf.get("AppConfig","appaddress")+"/addcontroller",json={"source_ip":client_address[0],"source_port":client_address[1]
                                                                      ,"destination_port":conf.get("AppConfig","port"),"destination_ip":conf.get("AppConfig","bindaddress"),"action":action,"enctype":""})
-                    #print(resp.text)
-                    #print(dict(json.loads(resp.text))["id"])
+                    
+                   
                     _id=dict(json.loads(resp.text))["id"]
+                    sock.send(str(_id).encode())
                     connections[client_address]=_id
+                    #END OF New connection handling-------------------------------
+                    # Process received data
                 requests.post(conf.get("AppConfig","appaddress")+"/save/data/"+str(_id),json={"b64data":b64data.decode()})
 
                 outputs[sock] = data
@@ -96,4 +99,4 @@ while inputs:
         del inputs[sock]
         if sock in outputs:
             del outputs[sock]
-        sock.close()
+        sock.close()()
