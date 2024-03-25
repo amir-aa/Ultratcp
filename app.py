@@ -134,6 +134,7 @@ def saveinDB(_id):
         
         iterator+=1
     DataTable.insert(Val=joined_data,TID=_id).execute()
+    logs.append(f"saved {iterator} chunks in the DB")
     return jsonify(f"Saved Successfully saved {iterator} chunks")
     
 @app.route('/save/file/<filename>/<id>')

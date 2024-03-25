@@ -3,3 +3,6 @@ test.py
 my_database.db-shm
 my_database.db-wal
 configs.ini
+Lib/
+Scripts/
+pyvenv.cfg
