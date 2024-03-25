@@ -170,7 +170,13 @@ def get_logs():
     if len(logs)<1:
         return jsonify("No Logs!")
     lastlog=logs[-1]
-    logs.clear()
     return jsonify(lastlog)
+
+@app.route('/get_all_logs')
+def get_all_logs():
+    if len(logs)<1:
+        return jsonify("No Logs!")
+    logs.clear()
+    return jsonify(logs)
 
 app.run(debug=True)
