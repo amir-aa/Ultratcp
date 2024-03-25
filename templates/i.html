@@ -130,7 +130,7 @@
       
 
       function fetchText() {
-  fetch('http://127.0.0.1:5000/getlogs')
+  fetch(JSON.parse('{{ apiaddr | tojson }}').concat('/getlogs'))
     .then(response => {
       if (!response.ok) {
         throw new Error('Network response was not ok');
@@ -256,7 +256,7 @@ setInterval(fetchDataAndCreateTable,2000)
 <script>
 
 function remove_by_id(id) {
-    const url = `http://127.0.0.1:5000/remove/conn/${id}`;
+    const url = JSON.parse('{{ apiaddr | tojson }}').concat(`/remove/conn/${id}`);
     fetch(url, {
         method: 'POST'
     })
@@ -303,7 +303,7 @@ function saveToFile(id) {
 
     if (filename !== null && filename !== "") {
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", "http://127.0.0.1:5000/save/file/" + encodeURIComponent(filename) + "/" + id, true);
+        xhr.open("GET", JSON.parse('{{ apiaddr | tojson }}').concat("/save/file/") + encodeURIComponent(filename) + "/" + id, true);
 
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4) {

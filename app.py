@@ -172,8 +172,5 @@ def get_logs():
     lastlog=logs[-1]
     logs.clear()
     return jsonify(lastlog)
-"""
-@app.route('/static/vendors/bower_components/<path>')
-def routi(path):
-    return send_from_directory('static/vendors/browser_components/', path)"""
+
 app.run(debug=True)
