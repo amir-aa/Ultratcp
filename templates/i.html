@@ -128,7 +128,7 @@
       }
 
       
-
+var temp=""
       function fetchText() {
   fetch(JSON.parse('{{ apiaddr | tojson }}').concat('/getlogs'))
     .then(response => {
@@ -141,7 +141,9 @@
         
             newText = text; 
     if ((!newText.includes("No Logs!"))){
+        if(newText!=temp){
       animateText(newText);
+      temp=newText;}
         }
       
     })
