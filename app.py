@@ -179,4 +179,4 @@ def get_all_logs():
     logs.clear()
     return jsonify(logs)
 
-app.run(debug=True)
+#app.run(debug=True)

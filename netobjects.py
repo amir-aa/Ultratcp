@@ -41,10 +41,10 @@ class TCPConnection:
             f.close()
         
             
-t1=TCPConnection("2","2",1,3,"forward","No")
-t2=TCPConnection("22","2",1,3,"forward","No")
-t3=t2.clone()
-print(t1.id)
-print(t2.id)
-t3.enctype="AES"
-print(t3.id)
+#t1=TCPConnection("2","2",1,3,"forward","No")
+#t2=TCPConnection("22","2",1,3,"forward","No")
+#t3=t2.clone()
+#print(t1.id)
+#print(t2.id)
+#t3.enctype="AES"
+#print(t3.id)
