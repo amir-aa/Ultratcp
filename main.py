@@ -1,8 +1,14 @@
 import multiprocessing
 import subprocess
+import asyncio
+from hypercorn.config import Config
+from hypercorn.asyncio import serve
 
+#from app import app
+
+#asyncio.run(serve(app, Config()))
 def run_flask_app():
-    subprocess.run(['python', 'app.py'])
+    subprocess.run(['hypercorn', 'app:app'])
 
 def run_tcp_server():
     subprocess.run(['python', 'tcpserver.py'])
