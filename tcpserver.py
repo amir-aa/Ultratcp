@@ -71,7 +71,7 @@ while inputs:
                     # Process received data
                 requests.post(conf.get("AppConfig","appaddress")+"/save/data/"+str(_id),json={"b64data":b64data.decode()})
 
-                outputs[sock] = data
+                #outputs[sock] = data if we need output / response for receiving each chunk 
             else:
                 # Client closed the connection
                 print("Client disconnected:", sock.getpeername())
@@ -90,8 +90,10 @@ while inputs:
                 sock.close()
     # Handle writable sockets (send outgoing data)
     for sock in writable:
-        data = outputs.pop(sock)
-        sock.sendall(data)
+        pass
+        #send data to clients
+        #data = outputs.pop(sock)
+        #sock.sendall(data)
 
     #Handle Exceptions
     for sock in exceptional:
