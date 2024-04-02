@@ -284,7 +284,7 @@ function remove_by_id(id) {
 <script>
 function saveToDB(_id) {
     var xhr = new XMLHttpRequest();
-    xhr.open("GET", "/save/db/" + _id, true);
+    xhr.open("POST", "/save/db/" + _id, true);
 
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
