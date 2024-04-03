@@ -8,7 +8,7 @@ from hypercorn.asyncio import serve
 
 #asyncio.run(serve(app, Config()))
 def run_flask_app():
-    subprocess.run(['hypercorn', 'app:app'])
+    subprocess.run(['hypercorn','--bind','0.0.0.0:1001', 'app:app'])
 
 def run_tcp_server():
     subprocess.run(['python', 'tcpserver.py'])
